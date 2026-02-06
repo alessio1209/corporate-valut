@@ -1,0 +1,12 @@
+services:
+  db-aziendale:
+    image: mariadb:10.11
+    container_name: corporate_valut_db
+    restart: always
+    ports:
+      - "3307:3306" #porta sx (3307) è del mio pc ed uso questa per non andare in conflitto se ho altro MySql acceso. Porta dx (3306) è la porta dentro il container
+    env_file:
+      - .env
+    volumes: #dove salvo i dati per non perderli al riavvio
+      - ./mysql_data:/var/lib/mysql
+      - ./init-scripts:/docker-entrypoint-initdb.d #appena il container viene creato vuoto, eseguirà questo file
