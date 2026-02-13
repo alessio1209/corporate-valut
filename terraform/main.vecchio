@@ -1,0 +1,45 @@
+#provider: diciamo a terraform con chi deve parlare, in questo caso con docker locale. 
+#terraform è il blocco amministrativo. Impostiamo le regole
+#required_providers= terraform di base non sa cos'è docker, AWS ecc... ha bisogno di scaricare dei plugin (chiamati provider) per parlare con i servizi
+#source = "kreuzwerker/docker"= è l'indirizzo da cui scaricare il plugin. Kreuzwerker è l'azienda che mantiene il servizio
+#provider "docker" {}= qui configuriamo il plugin che abbiamo scaricato. Nelle parentesi normalmente si mettono password o indirizzo del server (se fosse AWS metteremmo le chiavi segrete). In questo caso host indica dove trovare il motore docker e il percorso sta dicendo a terraform di non usare la rete, ma di collegarsi direttamente al Socket Unix locale (un file di sistema). Io l'ho commentato perchè l'ho definto nelle mie variabili d'ambiente permanenti.
+terraform { 
+	required_providers { 
+		docker = {
+			source = "kreuzwerker/docker"
+			version = "~> 3.0.2"
+		} 
+	}
+}
+
+provider "docker" {}
+
+#scarichiamo l'immagine. è l'equivalente di image nel compose di docker
+#resource "docker_image" "mariadb"= resource indica che vogliamo creare qualcosa, docker_image è il tipo e in questo caso stiamo diciamo a terraform di creare un'immagine Docker. "mariadb" è il nome che scegliamo noi per usarlo all'interno di questo file per riferirci a questa risorsa.
+#name = "mariadb:10.11"= è il nome reale su Docker Hub. è quello che terraform scaricherà
+#keep_locally = true= in questo modo se un giorno distruggessimo il container con terraform, non sarà cancellata anche l'immagine scaricata da mio disco rigido, risparmiando tempo e banda.
+resource "docker_image" "mariadb" {
+	name = "mariadb:10.11"
+	keep_locally = true
+}
+
+#creiamo il container
+#resource "docker_container" "db_aziendale"= qui stiamo creando una risorsa di tipo container e le diamo un nome a nostra scelta interno
+#image = docker_image.mariadb.image_id= qui è importante notare che non stiamo dicendo la versione da scaricare, ma stiamo creando un collegamento dinamico. Dirà a terraform di scaricare la risorsa definita prima (mariadb) e usa il suo ID univoco creando una dipendenza, in questo modo terraform capisce che deve scaricare l'immagine prima di poter creare il container
+#name = "corporate-valut-terraform"= è il nome che vedremo con il comando docker ps
+resource "docker_container" "db_aziendale" {
+	image = docker_image.mariadb.image_id
+	name = "corporate-valut-terraform"
+
+	#variabili d'ambiente
+	#env= []= stiamo creando una lista, inserendo all'interno le variabili d'ambiente scritte come stringhe di testo
+	env = [ "MYSQL_ROOT_PASSWORD=RootSecret123!", "MYSQL_DATABASE=techcorp_db", "MYSQL_USER=admin_hr", "MYSQL_PASSWORD=secure_hr_pass_2024" ]
+	
+	#mappatura porte
+	#internal= la porta dentro il container
+	#external= la porta sul mio pc
+	ports {
+		internal = 3306
+		external = 3307
+	}
+}

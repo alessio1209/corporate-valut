@@ -11,17 +11,17 @@ print ("tentativo di connessione al Database Aziendale")
 
 try: #try e except è una rete di sicurezza. Connettersi a un database è un'operazione che potrebbe fallire. 
 	#configurazione della connessione
-	connection= mysql.connector.connect (
+	db_connection= mysql.connector.connect ( #in questo modo stiamo avviando una comunicazione tra python e il db
 		host= "127.0.0.1", #mio pc
 		port= 3307, #porta esterna mappata nel docker-compose
 		user= os.getenv("MYSQL_USER"), #legge l'utente dal .env. In questo caso verrà automaticamente scritto MYSQL_USER
 		password= os.getenv("MYSQL_PASSWORD"),
 		database= os.getenv("MYSQL_DATABASE")
 	)
-	if connection.is_connected():
+	if db_connection.is_connected():
 		print ("connessione riuscita")
 	#creiamo il cursore per eseguire query
-		cursor= connection.cursor() #scorre le righe del database. Esegue i comandi
+		cursor= db_connection.cursor() #scorre le righe del database. Esegue i comandi
 	#eseguiamo la query
 		query= "SELECT nome, cognome, ruolo, stipendio FROM dipendenti;"
 		cursor.execute(query) #il cursore invia il comando SQL al database e aspetta la risposta
@@ -32,11 +32,11 @@ try: #try e except è una rete di sicurezza. Connettersi a un database è un'ope
 		for (nome, cognome, ruolo, stipendio) in cursor: #cicla ogni riga del database, prende i dati e li stampa 
 			full_name= f"{nome} {cognome}" 
 			print (f"{full_name: <25} | {ruolo: <20} | € {stipendio}")
-except EXCEPTION as e: #except se qualcosa va storto del campo TRY non far crashare tutto il programma e stampami gli errori. EXCEPTION è la categoria generale che include quasi tutti gli errori (rete, autenticazione, ecc)
+except Exception as e: #except se qualcosa va storto del campo TRY non far crashare tutto il programma e stampami gli errori. EXCEPTION è la categoria generale che include quasi tutti gli errori (rete, autenticazione, ecc)
 	print (f"\n ERRORE: {e}")
-	print ("Suggerimento: Controla di aver scritto giusti i nomi delle variabili nel codice!")
+	print ("Suggerimento: Controlla di aver scritto giusti i nomi delle variabili nel codice!")
 
 finally: #chiude la connessione al database. Lasciare connessioni aperte potrebbe bloccare il server alla lunga
-	if 'connection' in locals() and connection.is_connected():
-		connection.close()
+	if 'db_connection' in locals() and db_connection.is_connected():
+		db_connection.close()
 		print ("\n Connessione chiusa!")
